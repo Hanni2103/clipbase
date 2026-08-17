@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Clipbase · AI Brain</title>
+<style>
+  :root {
+    --bg:#050816; --card:rgba(255,255,255,0.05); --card-solid:#0E1228; --divider:rgba(255,255,255,0.08);
+    --text:#FFFFFF; --muted:#8B93A7;
+    --purple:#8B5CF6; --cyan:#06B6D4; --green:#10B981; --warn:#F59E0B; --gray:#64748B;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:#000; font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif; }
+  .phone { max-width:430px; margin:0 auto; min-height:100vh; background:var(--bg); display:flex; flex-direction:column; position:relative; overflow-x:hidden; }
+  main { flex:1; overflow-y:auto; padding:16px 16px 90px; }
+  h1 { font-size:18px; color:var(--text); }
+  h2 { font-size:15px; color:var(--text); margin:22px 0 10px; }
+  .muted { color:var(--muted); font-size:13px; }
+  .card { background:var(--card); border:1px solid var(--divider); border-radius:18px; padding:16px; margin-top:10px; backdrop-filter:blur(8px); }
+  .row { display:flex; gap:8px; }
+  input, textarea, select, button { font-family:inherit; font-size:14px; border-radius:10px; }
+  input[type=text], textarea, select { background:var(--card); border:1px solid var(--divider); color:var(--text); padding:10px; }
+  input[type=text] { flex:1; }
+  textarea { width:100%; min-height:56px; resize:vertical; margin-top:8px; }
+  button { background:var(--purple); color:#fff; border:none; padding:10px 16px; cursor:pointer; }
+  button.ghost { background:transparent; border:1px solid var(--purple); color:var(--purple); }
+  .btn-block { width:100%; background:var(--card); color:var(--text); text-align:left; margin-top:10px; padding:14px; border:1px solid var(--divider); }
+  .badge { display:inline-block; font-size:11px; padding:2px 8px; border-radius:6px; background:rgba(255,255,255,0.08); color:var(--muted); margin-right:4px; }
+  .badge.cat { color:var(--cyan); }
+  .item { background:var(--card); border:1px solid var(--divider); border-radius:16px; padding:14px; margin-top:10px; }
+  .item .title { color:var(--text); font-size:15px; font-weight:600; }
+  .item .summary { color:var(--muted); font-size:13px; margin-top:4px; }
+  .atoms { margin-top:8px; padding-left:10px; border-left:3px solid rgba(6,182,212,.3); }
+  .atom { display:flex; gap:6px; font-size:13px; color:var(--text); margin:4px 0; }
+  .atom .t { flex-shrink:0; font-size:11px; color:var(--cyan); }
+  .similar { margin-top:8px; background:rgba(245,158,11,.1); border-radius:10px; padding:8px 10px; font-size:12px; color:var(--warn); }
+  .result { white-space:pre-wrap; line-height:1.7; font-size:14px; color:var(--text); margin-top:10px; }
+  nav { position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:430px; background:rgba(5,8,22,.92); border-top:1px solid var(--divider); display:flex; backdrop-filter:blur(12px); }
+  nav button { flex:1; background:transparent; color:var(--muted); padding:12px 0 14px; font-size:12px; border:none; }
+  nav button.active { color:var(--purple); }
+  .toast { position:fixed; bottom:80px; left:50%; transform:translateX(-50%); background:#111; color:#fff; padding:10px 18px; border-radius:8px; font-size:13px; z-index:99; }
+  .hidden { display:none; }
+
+  /* ===== V2 首页 ===== */
+  .topbar { display:flex; justify-content:space-between; align-items:center; }
+  .topbar .logo { font-size:16px; font-weight:700; color:var(--text); letter-spacing:.5px; }
+  .topbar .tag { font-size:11px; color:var(--purple); }
+  .core { display:flex; flex-direction:column; align-items:center; margin:26px 0 8px; animation:fadeInUp .8s ease both; }
+  .orb { width:168px; height:168px; border-radius:50%; background:conic-gradient(from 210deg,#8B5CF6,#06B6D4,#10B981,#8B5CF6); padding:3px; animation:pulse 3.5s ease-in-out infinite; }
+  .orb-inner { width:100%; height:100%; border-radius:50%; background:radial-gradient(circle at 32% 28%,#1B1B4A,#050816 70%); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; }
+  .orb .brain { font-size:42px; filter:drop-shadow(0 0 12px rgba(139,92,246,.8)); }
+  .orb .pct { font-size:30px; font-weight:800; color:#fff; line-height:1; }
+  .orb .lbl { font-size:11px; color:var(--muted); letter-spacing:1px; }
+  .trend { margin-top:8px; font-size:12px; color:var(--green); }
+  .hero-title { text-align:center; font-size:19px; font-weight:700; color:var(--text); margin-top:16px; animation:fadeInUp .8s .1s ease both; }
+  .hero-sub { text-align:center; font-size:13px; color:var(--muted); margin-top:6px; animation:fadeInUp .8s .2s ease both; }
+  .health-bar { height:8px; border-radius:4px; background:rgba(255,255,255,.08); margin-top:12px; overflow:hidden; }
+  .health-fill { height:100%; border-radius:4px; background:linear-gradient(90deg,#8B5CF6,#06B6D4); transition:width 1.2s ease; }
+  .health-reasons { margin-top:10px; font-size:12px; color:var(--muted); line-height:1.8; }
+  .health-reasons b { color:var(--green); font-weight:600; }
+  .cap3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; margin-top:16px; }
+  .cap3 .box { background:var(--card); border:1px solid var(--divider); border-radius:16px; padding:14px 10px; text-align:center; animation:fadeInUp .8s .25s ease both; }
+  .cap3 .n { font-size:22px; font-weight:800; color:var(--text); }
+  .cap3 .l { font-size:11px; color:var(--muted); margin-top:4px; }
+  .mem { display:flex; align-items:center; gap:12px; background:var(--card); border:1px solid var(--divider); border-radius:14px; padding:14px; margin-top:10px; animation:fadeInUp .8s .3s ease both; }
+  .mem .dot { width:12px; height:12px; border-radius:50%; flex-shrink:0; }
+  .mem .g { flex:1; }
+  .mem .g .t { color:var(--text); font-size:14px; font-weight:600; }
+  .mem .g .d { color:var(--muted); font-size:12px; margin-top:2px; }
+  .mem .cnt { font-size:22px; font-weight:800; }
+  .insight { background:linear-gradient(135deg,rgba(139,92,246,.15),rgba(6,182,212,.12)); border:1px solid rgba(139,92,246,.3); border-radius:16px; padding:16px; margin-top:10px; animation:fadeInUp .8s .35s ease both; }
+  .insight .ic { font-size:20px; }
+  .insight .txt { color:var(--text); font-size:14px; margin-top:8px; line-height:1.6; }
+  .insight .link { color:var(--cyan); font-weight:600; }
+  .activity { background:var(--card); border:1px solid var(--divider); border-radius:16px; padding:16px; margin-top:10px; }
+  .activity .line { color:var(--muted); font-size:13px; margin:3px 0; }
+  .activity .line b { color:var(--text); }
+  .track { height:8px; border-radius:4px; background:rgba(255,255,255,.08); margin-top:12px; position:relative; }
+  .track .fill { height:100%; border-radius:4px; background:linear-gradient(90deg,#06B6D4,#10B981); width:60%; }
+  .track .p { position:absolute; top:-5px; width:12px; height:12px; border-radius:50%; background:#fff; box-shadow:0 0 8px #06B6D4; }
+  .addbtn { width:100%; margin-top:16px; padding:15px; border-radius:14px; border:1px dashed rgba(139,92,246,.5); background:transparent; color:var(--purple); font-size:14px; animation:fadeInUp .8s .4s ease both; }
+
+  @keyframes pulse { 0%,100%{ box-shadow:0 0 22px rgba(139,92,246,.45); } 50%{ box-shadow:0 0 52px rgba(6,182,212,.55); } }
+  @keyframes fadeInUp { from{ opacity:0; transform:translateY(14px) scale(.97); } to{ opacity:1; transform:none; } }
+  @keyframes float { 0%,100%{ transform:translateY(0);} 50%{ transform:translateY(-4px);} }
+</style>
+</head>
+<body>
+<div class="phone">
+  <main id="content"></main>
+  <nav id="nav">
+    <button data-tab="home" class="active">🏠 首页</button>
+    <button data-tab="knowledge">📚 知识库</button>
+    <button data-tab="search">🔍 检索</button>
+    <button data-tab="create">✨ 创造</button>
+    <button data-tab="profile">👤 我的</button>
+  </nav>
+</div>
+
+<script>
+const API = '';
+const $ = s => document.querySelector(s);
+let state = { userId: localStorage.getItem('clipbase_user') || (()=>{const u='u'+Math.random().toString(36).slice(2,10);localStorage.setItem('clipbase_user',u);return u;})(), tab:'home' };
+
+async function api(method, path, body) {
+  const r = await fetch(API+path, { method, headers:{'Content-Type':'application/json'}, body: body?JSON.stringify(body):undefined });
+  return r.json();
+}
+function esc(s){ return (s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function toast(m){ const t=document.createElement('div'); t.className='toast'; t.textContent=m; document.body.appendChild(t); setTimeout(()=>t.remove(),2500); }
+function debounce(fn, ms){ let t; return (...a)=>{ clearTimeout(t); t=setTimeout(()=>fn(...a),ms); }; }
+
+const PL = {wechat:'公众号',douyin:'抖音',xiaohongshu:'小红书',bilibili:'B站',image:'图片',text:'文字',web:'网页'};
+const AT = {key_point:'要点',step:'步骤',quote:'金句',fact:'数据'};
+const IN = {do_it:'照着做',insight:'有道理',material:'素材',inspiration:'灵感',fun:'娱乐'};
+
+function switchTab(tab) {
+  state.tab = tab;
+  document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('active', b.dataset.tab===tab));
+  ({home:renderHome, knowledge:renderKnowledge, search:renderSearch, create:renderCreate, profile:renderProfile})[tab]();
+}
+
+function countUp(el, target, suffix='') {
+  const t = target||0, dur=1200, start=performance.now();
+  function step(now){ const p=Math.min(1,(now-start)/dur), e=1-Math.pow(1-p,3); el.textContent=Math.round(e*t)+suffix; if(p<1) requestAnimationFrame(step); }
+  requestAnimationFrame(step);
+}
+
+// ===== 首页 V2 =====
+async function renderHome() {
+  $('#content').innerHTML = '<div class="muted" style="padding:40px 0;text-align:center;">唤醒你的 AI 大脑…</div>';
+  const [d, ins] = await Promise.all([
+    api('GET', `/api/dashboard?user_id=${state.userId}`),
+    api('GET', `/api/insight?user_id=${state.userId}`),
+  ]);
+  const boost = (d.today_review||0) + (d.today_ingested||0);
+  const insightHtml = ins.found
+    ? `<div class="insight">
+        <div class="ic">🧠 AI 发现</div>
+        <div class="txt">你收藏的「<span class="link">${esc(ins.item_a.title||'(无标题)')}</span>」和「<span class="link">${esc(ins.item_b.title||'(无标题)')}</span>」存在 <b style="color:var(--cyan);">${ins.similarity}%</b> 关联，是否建立知识连接？</div>
+        <div class="row" style="margin-top:12px;"><button>建立连接</button></div>
+      </div>`
+    : `<div class="insight"><div class="ic">🧠 AI 发现</div><div class="txt">继续收藏，AI 会帮你发现知识之间的隐藏关联。</div></div>`;
+
+  $('#content').innerHTML = `
+    <div class="topbar"><span class="logo">Clipbase</span><span class="tag">AI Brain</span></div>
+
+    <div class="core">
+      <div class="orb"><div class="orb-inner">
+        <span class="brain">🧠</span>
+        <span class="pct" id="hpct">0%</span>
+        <span class="lbl">记忆健康度</span>
+      </div></div>
+      <div class="trend">正在成长 ↑</div>
+    </div>
+
+    <div class="health-bar"><div class="health-fill" id="hbar" style="width:0%"></div></div>
+    <div class="health-reasons" id="hreasons"></div>
+
+    <div class="hero-title">你的 AI 大脑正在成长</div>
+    <div class="hero-sub">收藏不是终点，让知识持续产生价值</div>
+
+    <div class="cap3">
+      <div class="box"><div class="n" id="c_total">0</div><div class="l">知识容量</div></div>
+      <div class="box"><div class="n" id="c_ingest" style="color:var(--cyan);">0</div><div class="l">今日吸收</div></div>
+      <div class="box"><div class="n" id="c_todo" style="color:var(--warn);">0</div><div class="l">等待整理</div></div>
+    </div>
+
+    <h2>AI 状态</h2>
+    <div class="mem"><span class="dot" style="background:var(--green);"></span><div class="g"><div class="t">活跃记忆</div><div class="d">AI 认为：当前最有价值</div></div><div class="cnt" style="color:var(--green);">${d.lifecycle.active}</div></div>
+    <div class="mem"><span class="dot" style="background:var(--warn);"></span><div class="g"><div class="t">即将遗忘</div><div class="d">建议：重新阅读</div></div><div class="cnt" style="color:var(--warn);">${d.lifecycle.review}</div></div>
+    <div class="mem"><span class="dot" style="background:var(--gray);"></span><div class="g"><div class="t">沉睡知识</div><div class="d">等待重新激活</div></div><div class="cnt" style="color:var(--gray);">${d.lifecycle.expired}</div></div>
+
+    <h2>AI 今日建议</h2>
+    ${insightHtml}
+
+    <button class="addbtn" onclick="switchTab('knowledge')">+ 添加新知识</button>
+
+    <h2>Brain Activity</h2>
+    <div class="activity">
+      <div class="line">今天你的 AI 大脑</div>
+      <div class="line">+<b>${d.today_ingested}</b> 新知识 &nbsp; +<b>${d.today_review}</b> 复习 &nbsp; -<b>${d.lifecycle.expired}</b> 沉睡</div>
+      <div class="track"><div class="fill" id="trackfill" style="width:0%"></div><div class="p" id="trackp" style="left:0%"></div></div>
+      <div class="muted" style="margin-top:8px;">成长轨迹</div>
+    </div>
+  `;
+
+  // 动画
+  setTimeout(() => {
+    countUp($('#hpct'), d.brain_health, '%');
+    $('#hbar').style.width = d.brain_health + '%';
+    countUp($('#c_total'), d.total);
+    countUp($('#c_ingest'), d.today_ingested);
+    countUp($('#c_todo'), d.expiring_soon);
+    const tp = Math.min(100, d.total ? Math.round(100*d.total/2000) : 4);
+    $('#trackfill').style.width = tp + '%';
+    $('#trackp').style.left = tp + '%';
+    $('#hreasons').innerHTML = `<b>+${boost}</b> 今日提升 &nbsp;·&nbsp; ✓ 学习 ${d.today_ingested} 条 &nbsp; ✓ 完成 ${d.today_review} 次复习`;
+  }, 100);
+}
+
+// ===== 知识库（保留）=====
+async function renderKnowledge() {
+  $('#content').innerHTML = `<h1>知识库</h1><textarea id="ingestText" placeholder="粘贴文字或链接，回车收藏"></textarea>
+    <div class="row" style="margin-top:8px;"><input type="text" id="kSearch" placeholder="搜索"><select id="kCat"><option value="">全部分类</option>${['美食','科技','搞笑娱乐','学习成长','职场','生活方式','健康','财经商业','新闻资讯','其他'].map(c=>`<option>${c}</option>`).join('')}</select></div>
+    <div id="list"></div>`;
+  $('#ingestText').addEventListener('keydown', e => { if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); ingest(); } });
+  $('#kSearch').addEventListener('input', debounce(loadItems, 400));
+  $('#kCat').addEventListener('change', loadItems);
+  await loadItems();
+}
+async function loadItems() {
+  const q = $('#kSearch')?.value || '', cat = $('#kCat')?.value || '';
+  const params = new URLSearchParams({user_id:state.userId}); if(cat)params.set('category',cat); if(q)params.set('q',q);
+  const r = await api('GET', `/api/items?${params}`); const items = r.items||[];
+  const list = $('#list'); if(!list)return;
+  list.innerHTML = items.length ? items.map(renderItem).join('') : '<div class="muted" style="text-align:center;padding:40px 0;">还没有内容，去首页或这里收藏一条</div>';
+}
+function renderItem(it) {
+  const atoms=(it.atoms||[]).map(a=>`<div class="atom"><span class="t">[${AT[a.type]||a.type}]</span>${esc(a.content)}</div>`).join('');
+  const similar=(it.similar_items||[]).length?`<div class="similar">📌 你存过 ${it.similar_items.length} 条类似内容</div>`:'';
+  return `<div class="item" onclick="openItem('${it.id}')"><div class="title">${esc(it.title||'(无标题)')}</div>
+    <div style="margin-top:6px;"><span class="badge">${PL[it.source_platform]||it.source_platform}</span>${it.category?`<span class="badge cat">${esc(it.category)}</span>`:''}${it.intent?`<span class="badge">${IN[it.intent]||it.intent}</span>`:''}</div>
+    ${it.summary?`<div class="summary">${esc(it.summary)}</div>`:''}${atoms?`<div class="atoms">${atoms}</div>`:''}${similar}</div>`;
+}
+function openItem(id){ window.location.hash = '#'; /* 简单跳转：切知识库并提示 */ toast('详情页在客户端/后续版本'); }
+async function ingest() {
+  const text=$('#ingestText').value.trim(); if(!text)return; $('#ingestText').value='';
+  const r=await api('POST','/api/ingest',{user_id:state.userId,text});
+  if(r.similar&&r.similar.length)toast(`⚠️ 这条之前收藏过（${r.similar.length} 条精确重复）`); else toast('已收藏，正在分类…');
+  setTimeout(loadItems,5000);
+}
+
+// ===== 检索 / 创造 / 我的（保留）=====
+async function renderSearch() {
+  $('#content').innerHTML=`<h1>检索</h1><input type="text" id="sSearch" placeholder="语义检索，如「怎么给视频加字幕」"><div id="sResult"></div>`;
+  $('#sSearch').addEventListener('input', debounce(async()=>{
+    const q=$('#sSearch').value.trim(); if(!q){$('#sResult').innerHTML='';return;}
+    const params=new URLSearchParams({user_id:state.userId,q}); const r=await api('GET',`/api/items?${params}`);
+    const items=r.items||[]; $('#sResult').innerHTML=items.length?items.map(renderItem).join(''):'<div class="muted" style="padding:20px;text-align:center;">无结果</div>';
+  },400));
+}
+const TYPES=[['article','📄 深度文章'],['copywriting','✍️ 文案写作'],['xiaohongshu','📕 小红书笔记'],['video_script','🎬 视频脚本'],['weekly','📊 周报总结'],['business','📈 商业分析'],['mindmap','🧠 思维导图']];
+async function renderCreate(){
+  $('#content').innerHTML=`<h1>创造</h1><div class="muted" style="margin-top:4px;">基于你的知识库，AI 帮你创作优质内容</div><div id="typeBtns"></div><div class="result" id="result"></div>`;
+  $('#typeBtns').innerHTML=TYPES.map(([k,l])=>`<button class="btn-block" onclick="compose('${k}')">${l}</button>`).join('');
+}
+async function compose(type){ $('#result').textContent='⏳ 正在创作，请稍候…'; const r=await api('POST','/api/compose',{user_id:state.userId,type}); $('#result').textContent=r.content||r.error||'（空）'; }
+async function renderProfile(){
+  $('#content').innerHTML=`<h1>我的</h1><div class="card muted" style="margin-top:12px;">用户 ID：${state.userId}</div><div class="card" id="pStats">加载中…</div>`;
+  const d=await api('GET',`/api/dashboard?user_id=${state.userId}`);
+  $('#pStats').innerHTML=`<div style="color:var(--text);">知识容量 ${d.total} · 需复习 ${d.lifecycle.review} · 已过期 ${d.lifecycle.expired}</div><div class="muted" style="margin-top:6px;">大脑健康度 ${d.brain_health}%</div>`;
+}
+
+document.querySelectorAll('#nav button').forEach(b => b.addEventListener('click', () => switchTab(b.dataset.tab)));
+switchTab('home');
+</script>
+</body>
+</html>

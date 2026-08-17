@@ -1,0 +1,16 @@
+node_modules/
+dist/
+data/
+.env
+*.log
+
+# Android 构建产物
+client/android/app/build/
+client/android/build/
+client/android/.gradle/
+.gradle/
+local.properties
+
+# 系统文件
+.DS_Store
+Thumbs.db
