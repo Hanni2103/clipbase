@@ -7,9 +7,11 @@ function mapInsight(o: any): Insight {
         found: true,
         aTitle: o.item_a?.title ?? '',
         bTitle: o.item_b?.title ?? '',
+        aId: o.item_a?.id ?? '',
+        bId: o.item_b?.id ?? '',
         similarity: o.similarity ?? 0,
       }
-    : { found: false, aTitle: '', bTitle: '', similarity: 0 }
+    : { found: false, aTitle: '', bTitle: '', aId: '', bId: '', similarity: 0 }
 }
 
 export async function fetchBrainState(): Promise<BrainState> {

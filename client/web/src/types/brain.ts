@@ -15,6 +15,8 @@ export interface Insight {
   found: boolean
   aTitle: string
   bTitle: string
+  aId: string
+  bId: string
   similarity: number
 }
 
@@ -51,6 +53,7 @@ export interface RecallItem {
   intent: string | null
   recallScore: number
   halfLife: number | null
+  createdAt: string
 }
 
 export interface ExpiredItem {

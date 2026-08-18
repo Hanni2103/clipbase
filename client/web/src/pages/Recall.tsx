@@ -9,6 +9,7 @@ import { SkeletonList } from '../components/ui/Skeleton'
 import EmptyState from '../components/ui/EmptyState'
 import ErrorState from '../components/ui/ErrorState'
 import GlassCard from '../components/ui/GlassCard'
+import RecallReason from '../components/recall/RecallReason'
 
 export default function Recall() {
   const [items, setItems] = useState<RecallItem[]>([])
@@ -49,6 +50,7 @@ export default function Recall() {
                     {it.halfLife && <span>· 半衰期 {it.halfLife} 天</span>}
                     <span className="ml-auto text-warning">召回分 {it.recallScore}</span>
                   </div>
+                  <RecallReason item={it} />
                 </GlassCard>
               </Link>
             ))}

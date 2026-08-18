@@ -10,5 +10,6 @@ export async function fetchRecall(): Promise<RecallItem[]> {
     intent: o.intent || null,
     recallScore: o.recall_score ?? 0,
     halfLife: o.half_life ?? null,
+    createdAt: o.created_at || '',
   }))
 }

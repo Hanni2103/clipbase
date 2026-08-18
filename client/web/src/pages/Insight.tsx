@@ -57,9 +57,24 @@ export default function Insight() {
                 <span className="text-white">{insight.bTitle || '（无标题）'}</span> 存在{' '}
                 <span className="font-bold text-secondary">{insight.similarity}%</span> 关联。
               </p>
-              <button className="mt-5 rounded-full bg-white/10 px-5 py-2 text-sm transition hover:bg-white/20">
-                查看连接
-              </button>
+              <div className="mt-5 flex flex-wrap gap-2">
+                {insight.aId && (
+                  <Link
+                    to={`/memory/${insight.aId}`}
+                    className="rounded-full bg-white/10 px-5 py-2 text-sm transition hover:bg-white/20"
+                  >
+                    查看 {insight.aTitle || '知识 A'}
+                  </Link>
+                )}
+                {insight.bId && (
+                  <Link
+                    to={`/memory/${insight.bId}`}
+                    className="rounded-full bg-white/10 px-5 py-2 text-sm transition hover:bg-white/20"
+                  >
+                    查看 {insight.bTitle || '知识 B'}
+                  </Link>
+                )}
+              </div>
             </GlassCard>
           )}
         </div>
