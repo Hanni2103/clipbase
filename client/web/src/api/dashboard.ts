@@ -1,7 +1,7 @@
 import { get, userId } from './client'
-import type { BrainState, Insight } from '../types/brain'
+import type { BrainState, ConnectionInsight } from '../types/brain'
 
-function mapInsight(o: any): Insight {
+function mapInsight(o: any): ConnectionInsight {
   return o.found
     ? {
         found: true,
@@ -34,7 +34,7 @@ export async function fetchBrainState(): Promise<BrainState> {
   }
 }
 
-export async function fetchInsight(): Promise<Insight> {
+export async function fetchInsight(): Promise<ConnectionInsight> {
   const data = await get<any>(`/api/insight?user_id=${userId()}`)
   return mapInsight(data)
 }

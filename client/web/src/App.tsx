@@ -8,6 +8,7 @@ import Expired from './pages/Expired'
 import Insight from './pages/Insight'
 import Create from './pages/Create'
 import CreateEditor from './pages/CreateEditor'
+import Universe from './pages/Universe'
 import Me from './pages/Me'
 import Preferences from './pages/Preferences'
 
@@ -23,6 +24,7 @@ export default function App() {
         <Route path="/me" element={<Me />} />
       </Route>
       <Route path="/memory/:id" element={<MemoryDetail />} />
+      <Route path="/universe" element={<Universe />} />
       <Route path="/create/:type" element={<CreateEditor />} />
       <Route path="/expired" element={<Expired />} />
       <Route path="/insight" element={<Insight />} />

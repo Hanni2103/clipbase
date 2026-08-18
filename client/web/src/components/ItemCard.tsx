@@ -8,15 +8,20 @@ function daysSince(iso: string): number {
 
 type Stage = 'active' | 'fading' | 'sleeping'
 
-function lifecycle(item: Item): { stage: Stage; remaining: number; ratio: number } {
+/** 强度：优先真实 memory_strength，NULL 回退半衰期推导 */
+function strengthOf(item: Item): number {
+  if (item.memoryStrength !== null && item.memoryStrength !== undefined) return item.memoryStrength
+  return Math.pow(0.5, daysSince(item.createdAt) / (item.halfLife ?? 30))
+}
+
+function lifecycle(item: Item): { stage: Stage; strength: number; remainingDays: number } {
+  const strength = strengthOf(item)
   const hl = item.halfLife ?? 30
-  const days = daysSince(item.createdAt)
-  const remaining = Math.max(0, hl - days)
-  const ratio = hl > 0 ? Math.min(1, remaining / hl) : 0
+  const remainingDays = Math.max(0, Math.round(hl - daysSince(item.createdAt)))
   let stage: Stage = 'active'
-  if (item.digestState === 'unread' || remaining <= 0) stage = 'sleeping'
-  else if (remaining <= hl * 0.3) stage = 'fading'
-  return { stage, remaining: Math.round(remaining), ratio }
+  if (item.digestState === 'unread' || strength < 0.25) stage = 'sleeping'
+  else if (strength < 0.6) stage = 'fading'
+  return { stage, strength, remainingDays }
 }
 
 const STAGE: Record<Stage, { label: string; icon: string; bar: string; text: string }> = {
@@ -31,16 +36,19 @@ export default function ItemCard({ item }: { item: Item }) {
 
   return (
     <div className="rounded-2xl border border-white/10 bg-surface-memory p-4 backdrop-blur-xl">
-      {/* 生命周期 */}
+      {/* 生命周期（真实 memory_strength 驱动） */}
       <div className="mb-3">
         <div className="flex items-center justify-between text-xs">
           <span className={st.text}>
             {st.icon} {st.label}
           </span>
-          <span className="text-white/40">还剩 {lc.remaining} 天</span>
+          <span className="text-white/40">
+            还剩 {lc.remainingDays} 天
+            {item.reviewCount > 0 && <span className="ml-1.5 text-primary/70">· 复习 {item.reviewCount} 次</span>}
+          </span>
         </div>
         <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
-          <div className={`h-full rounded-full ${st.bar}`} style={{ width: `${lc.ratio * 100}%` }} />
+          <div className={`h-full rounded-full ${st.bar}`} style={{ width: `${Math.min(100, lc.strength * 100)}%` }} />
         </div>
       </div>
 

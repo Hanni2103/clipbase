@@ -110,6 +110,38 @@ export default function MemoryDetail() {
               </GlassCard>
             </section>
 
+            <section>
+              <SectionHeader title="记忆能量" />
+              <GlassCard className="p-4 text-sm text-white/60">
+                <div className="flex items-center justify-between py-1">
+                  <span>记忆强度</span>
+                  <span className="text-white">{Math.round((item.memoryStrength ?? 0) * 100)}%</span>
+                </div>
+                <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+                  <div
+                    className="h-full rounded-full bg-primary"
+                    style={{ width: `${Math.min(100, (item.memoryStrength ?? 0) * 100)}%` }}
+                  />
+                </div>
+                <div className="mt-2 flex justify-between py-1">
+                  <span>复习次数</span>
+                  <span className="text-white">{item.reviewCount}</span>
+                </div>
+                {item.lastRecalledAt && (
+                  <div className="flex justify-between py-1">
+                    <span>最近复习</span>
+                    <span className="text-white">{new Date(item.lastRecalledAt).toLocaleDateString()}</span>
+                  </div>
+                )}
+                {item.nextReviewAt && (
+                  <div className="flex justify-between py-1">
+                    <span>下次复习</span>
+                    <span className="text-white">{new Date(item.nextReviewAt).toLocaleDateString()}</span>
+                  </div>
+                )}
+              </GlassCard>
+            </section>
+
             <MemoryRelation items={item.similarItems} />
 
             {item.similarItems.length > 0 && (

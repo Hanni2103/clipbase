@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { Orbit } from 'lucide-react'
 import { fetchItems } from '../api/memory'
 import type { Item } from '../types/brain'
 import { CATEGORIES } from '../lib/labels'
@@ -33,6 +34,13 @@ export default function Memory() {
       <AuroraBackground />
       <main className="relative mx-auto max-w-md px-6 pb-28 pt-10">
         <PageHeader title="我的记忆" subtitle="你沉淀的所有知识，AI 已帮你理解、整理、连接" />
+
+        <Link
+          to="/universe"
+          className="mt-4 flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white transition hover:bg-white/10"
+        >
+          <Orbit size={16} className="text-primary" /> 记忆宇宙
+        </Link>
 
         <input
           value={q}

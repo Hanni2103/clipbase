@@ -15,6 +15,10 @@ export function mapItem(o: any): Item {
     digestState: o.digest_state || 'unread',
     halfLife: o.half_life ?? null,
     createdAt: o.created_at || '',
+    memoryStrength: o.memory_strength ?? null,
+    reviewCount: o.review_count ?? 0,
+    nextReviewAt: o.next_review_at ?? null,
+    lastRecalledAt: o.last_recalled_at ?? null,
   }
 }
 
