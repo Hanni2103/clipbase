@@ -38,7 +38,7 @@ export function ngramSimilarity(a: string, b: string): number {
 }
 
 /** 标签/分类重合度 */
-function tagOverlap(tagsA: string[], tagsB: string[]): number {
+export function tagOverlap(tagsA: string[], tagsB: string[]): number {
   if (tagsA.length === 0 || tagsB.length === 0) return 0;
   const setB = new Set(tagsB);
   let hit = 0;

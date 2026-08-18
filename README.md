@@ -18,6 +18,22 @@ Clipbase 是一个 **AI 知识生命系统（AI Memory OS）**：用户从任意
 
 ---
 
+## AI Memory OS 架构（Phase 6）
+
+Clipbase 的核心不是「存内容」，而是围绕**记忆**构建的一层智能：
+
+| 实体 | 职责 | 关键字段 |
+|---|---|---|
+| **Memory** | 被 AI 理解并纳入生命周期管理的记忆 | `memory_strength`（强度）/ `review_count` / `next_review_at` / `half_life` |
+| **Relation** | 记忆之间的持久化关系（图谱的边） | `type`（similar/topic）/ `source`（keyword/tag）/ `evidence` |
+| **Insight** | AI 发现的可持久化、可反馈的洞察 | `type`（pattern/connection/trend/opportunity）/ `impact_score` / `status` |
+| **Recall** | 主动唤醒 + 复习反馈闭环 | `recall_score`（快照）/ `feedback`（again/good/easy） |
+| **Compose** | 记忆优先创作 + 溯源 | `context_score` / `used_memory_ids` / `cited_atoms` |
+
+**可信原则**：所有关系、洞察、生成都必须携带 `source`/`evidence`/`cited_atoms`，**没有证据就不产出「AI 发现」**——宁可返回空，也不伪造关系。
+
+---
+
 ## 快速开始
 
 ```bash
@@ -33,7 +49,7 @@ npm start
 - 后端：`http://localhost:3000`
 - **Web 看板（AI Brain V2 首页）**：浏览器打开 `http://localhost:3000`
 - 健康检查：`/health`（未配 Key 时返回 `mock:true`）
-- 测试：`npm test`（需先启动服务）
+- 测试：`npm test`（24 项冒烟）+ `npm run test:phase6`（21 项智能层，均需先启动服务）
 
 ## 配置大模型（可选）
 
@@ -80,11 +96,23 @@ VISION_MODEL=          # 图片 OCR 用的多模态模型（留空则图片分�
 ### 创造 / 搜索 / 偏好
 | 方法 | 路径 | 说明 |
 |---|---|---|
-| POST | `/api/compose` | 一键成文（type 参数，7 种类型）|
+| POST | `/api/compose` | 一键成文（type + 可选 memory_ids/tone/audience/length，返回 used_memory_ids/cited_atoms/token_estimate）|
 | GET | `/api/compose-types` | 创作类型列表 |
 | GET | `/api/weekly` | 周报 |
 | GET | `/api/search?q=xxx` | 语义近似搜索 |
 | GET/PATCH | `/api/prefs` | 用户偏好（静音主题/提醒频率/时区）|
+
+### 智能层（Memory OS · Phase 6）
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| GET | `/api/relations?user_id=&memory_id=&type=` | 记忆关系列表（含 source/evidence）|
+| GET | `/api/graph?user_id=` | 知识图谱（nodes + edges，真实边）|
+| GET | `/api/insights?user_id=&status=` | 洞察列表 |
+| POST | `/api/insights/generate` | 从关系生成洞察（幂等，无关系则 0）|
+| PATCH | `/api/insights/:id` | 洞察反馈（status: accepted/dismissed）|
+| GET | `/api/recall/events?user_id=&memory_id=` | 召回事件历史 |
+| POST | `/api/recall/:memoryId/review` | 复习反馈（feedback: again/good/easy）|
+| GET | `/api/compose/context?user_id=&memory_ids=&type=&topic=` | 创作上下文预览（context_score + token 预估）|
 
 ---
 
@@ -100,6 +128,11 @@ VISION_MODEL=          # 图片 OCR 用的多模态模型（留空则图片分�
 - ✅ 照镜子相似提醒（精确/高度/主题相关三级）
 - ✅ 语义近似搜索、收藏动机、半衰期、生命周期、主动唤醒、做减法
 - ✅ 一键成文（7 种类型）+ 周报
+- ✅ Memory Entity：记忆强度（memory_strength）/ 复习调度（review_count/next_review_at）
+- ✅ Relation：similar/topic 真实关系 + 知识图谱（无 source 不出边）
+- ✅ Insight：持久化 + 反馈（accept/dismiss）+ 无关系不生成
+- ✅ Recall：复习反馈闭环（feedback → memory_strength，不改 half_life）
+- ✅ Compose Context：context_score 排序 + token 截断 + used_memory_ids/cited_atoms 溯源
 - ✅ Web 看板（AI Brain V2 首页）+ Android（5 Tab 深色）+ iOS 源码
 - ⏳ 视频号：暂不支持（浏览器基本打不开）
 
@@ -116,7 +149,7 @@ VISION_MODEL=          # 图片 OCR 用的多模态模型（留空则图片分�
 ## 目录结构
 
 ```
-src/            后端（server/routes/pipeline/db + extractors/classifier/similar/halflife/composer）
+src/            后端（server/routes/pipeline/db + services/ + extractors/classifier/similar/halflife/composer）
 public/         Web 看板（AI Brain V2 首页）
 client/ios/     iOS 客户端（SwiftUI + Share Extension）
 client/android/ Android 客户端（5 Tab 深色 + 分享接收）

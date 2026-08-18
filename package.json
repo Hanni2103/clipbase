@@ -8,6 +8,7 @@
     "dev": "tsx watch src/server.ts",
     "start": "tsx src/server.ts",
     "test": "tsx scripts/smoke-test.ts",
+    "test:phase6": "tsx scripts/phase6-test.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

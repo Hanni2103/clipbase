@@ -3,6 +3,7 @@ import { runExtractor } from './extractors/index.js';
 import { classify } from './classifier/index.js';
 import { findSimilar } from './similar.js';
 import { halfLifeForCategory } from './halflife.js';
+import { relateNewItem } from './services/relation.service.js';
 
 /** 极简内存队列：ingest 立即返回，Worker 异步做「提取 + 分类」 */
 const queue: string[] = [];
@@ -71,6 +72,9 @@ async function process(id: string): Promise<void> {
       { title: extracted.title, summary: result.summary, tags: result.tags },
     );
     setSimilarItems(id, similar);
+
+    // 关系引擎（增量）：similar + topic 建边
+    relateNewItem(item.user_id, id);
 
     if (result.confidence < 0.6) {
       setStatus(id, 'needs_review', '分类置信度较低，请确认');

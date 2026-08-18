@@ -18,8 +18,12 @@ export function halfLifeForCategory(category: string | null): number {
   }
 }
 
+/** 距现在多少天（可为小数） */
+export function daysSince(iso: string): number {
+  return (Date.now() - new Date(iso).getTime()) / 86400000;
+}
+
 /** 召回得分：随天数指数衰减（0.5 的 days/half_life 次方） */
 export function recallScore(createdAt: string, halfLife: number): number {
-  const days = (Date.now() - new Date(createdAt).getTime()) / 86400000;
-  return Math.pow(0.5, days / halfLife);
+  return Math.pow(0.5, daysSince(createdAt) / halfLife);
 }

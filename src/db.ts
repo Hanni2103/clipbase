@@ -864,3 +864,11 @@ export function setMemoryStrength(id: string, strength: number): void {
   db.prepare('UPDATE items SET memory_strength = ?, updated_at = ? WHERE id = ?')
     .run(strength, new Date().toISOString(), id);
 }
+
+/** 记录一次复习：更新强度、复习次数、最近召回时间、下次复习时间 */
+export function applyReview(id: string, strength: number, nextReviewAt: string): void {
+  const now = new Date().toISOString();
+  db.prepare(`
+    UPDATE items SET memory_strength = ?, review_count = review_count + 1, last_recalled_at = ?, next_review_at = ?, updated_at = ? WHERE id = ?
+  `).run(strength, now, nextReviewAt, now, id);
+}

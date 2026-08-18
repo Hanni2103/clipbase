@@ -88,14 +88,24 @@ function composeMock(items: ComposeItem[], type: ComposeType, topic?: string): s
   );
 }
 
+export interface ComposeOptions {
+  tone?: string;
+  audience?: string;
+  length?: string;
+}
+
 /** 一键创作：把用户收藏消化重组成指定类型的内容 */
 export async function composeDocument(
   items: ComposeItem[],
   type: ComposeType,
   topic?: string,
+  opts?: ComposeOptions,
 ): Promise<string> {
   if (config.useMock) return composeMock(items, type, topic);
-  const system = `${BASE_SYSTEM}\n\n本次创作类型：${TYPE_INSTRUCTIONS[type] ?? TYPE_INSTRUCTIONS.article}`;
+  const extra = [opts?.tone ? `语气：${opts.tone}` : '', opts?.audience ? `目标读者：${opts.audience}` : '', opts?.length ? `篇幅：${opts.length}` : '']
+    .filter(Boolean)
+    .join('\n');
+  const system = `${BASE_SYSTEM}\n\n本次创作类型：${TYPE_INSTRUCTIONS[type] ?? TYPE_INSTRUCTIONS.article}${extra ? `\n${extra}` : ''}`;
   const user = buildUserPrompt(items) + (topic ? `\n\n主题：${topic}` : '');
   return callLLM(system, user);
 }

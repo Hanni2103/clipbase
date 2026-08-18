@@ -5,6 +5,11 @@ import { detectPlatform } from './extractors/detect.js';
 import { combinedSimilarity, hashContent, ngramSimilarity } from './similar.js';
 import { recallScore } from './halflife.js';
 import { composeDocument, COMPOSE_TYPES, type ComposeType } from './composer.js';
+import { listInsights, listRelations, listRecallEvents, updateInsightStatus } from './db.js';
+import { buildGraph } from './services/relation.service.js';
+import { generateConnections } from './services/insight.service.js';
+import { buildRecallQueue, reviewMemory } from './services/recall.service.js';
+import { buildContext, generateCompose } from './services/compose.service.js';
 import type { Platform } from './types.js';
 
 export const router = Router();
@@ -222,22 +227,7 @@ router.get('/recall', (req, res) => {
   const userId = String(req.query.user_id ?? '').trim();
   if (!userId) return res.status(400).json({ error: '缺少 user_id' });
   const limit = Number(req.query.limit ?? 10);
-  const muted = getPrefs(userId).muted_topics;
-  const items = listItemsForSimilarity(userId)
-    .filter((it) => it.status === 'completed' && (it.digest_state === 'unread' || it.digest_state === 'read') && !isMuted(it, muted))
-    .map((it) => ({
-      id: it.id,
-      title: it.title,
-      category: it.category,
-      intent: it.intent,
-      digest_state: it.digest_state,
-      half_life: it.half_life,
-      recall_score: Number(recallScore(it.created_at, it.half_life ?? 30).toFixed(3)),
-      created_at: it.created_at,
-    }))
-    .sort((a, b) => b.recall_score - a.recall_score)
-    .slice(0, limit);
-  return res.json({ items });
+  return res.json({ items: buildRecallQueue(userId, limit) });
 });
 
 // ===== 做减法（过期建议归档） =====
@@ -314,24 +304,28 @@ router.post('/compose', async (req, res) => {
   const typeRaw = body.type ? String(body.type) : 'article';
   const validTypes: ComposeType[] = ['article', 'copywriting', 'xiaohongshu', 'video_script', 'weekly', 'business', 'mindmap'];
   const type: ComposeType = validTypes.includes(typeRaw as ComposeType) ? (typeRaw as ComposeType) : 'article';
+  const memoryIds = Array.isArray(body.memory_ids) ? body.memory_ids.map(String) : undefined;
 
-  let items = listItemsForSimilarity(userId).filter((it) => it.status === 'completed');
-  if (sceneId) items = items.filter((it) => it.scene_id === sceneId);
-  if (category) items = items.filter((it) => it.category === category);
-  if (items.length === 0) return res.status(400).json({ error: '没有可整理的内容' });
-
-  const atomsMap = getAtomsForItems(items.map((i) => i.id));
-  const composeItems = items.map((it) => ({
-    title: it.title,
-    category: it.category,
-    summary: it.summary,
-    tags: it.tags,
-    atoms: atomsMap[it.id] ?? [],
-  }));
+  // 兼容旧参数：scene_id / category → 换算成 memory_ids
+  let resolvedMemoryIds = memoryIds;
+  if (!resolvedMemoryIds && (sceneId || category)) {
+    let items = listItemsForSimilarity(userId).filter((it) => it.status === 'completed');
+    if (sceneId) items = items.filter((it) => it.scene_id === sceneId);
+    if (category) items = items.filter((it) => it.category === category);
+    resolvedMemoryIds = items.map((it) => it.id);
+  }
 
   try {
-    const content = await composeDocument(composeItems, type, topic);
-    return res.json({ title: topic || '我的知识整理', type, content });
+    const result = await generateCompose({
+      userId,
+      type,
+      memoryIds: resolvedMemoryIds,
+      topic,
+      tone: body.tone ? String(body.tone) : undefined,
+      audience: body.audience ? String(body.audience) : undefined,
+      length: body.length ? String(body.length) : undefined,
+    });
+    return res.json(result);
   } catch (e) {
     return res.status(500).json({ error: (e as Error).message });
   }
@@ -449,5 +443,88 @@ router.get('/insight', (req, res) => {
     item_a: { id: best.a.id, title: best.a.title, category: best.a.category },
     item_b: { id: best.b.id, title: best.b.title, category: best.b.category },
     similarity: Math.round(best.similarity * 100),
+  });
+});
+
+// ===== Phase 4：关系 / 图谱 =====
+router.get('/relations', (req, res) => {
+  const userId = String(req.query.user_id ?? '').trim();
+  if (!userId) return res.status(400).json({ error: '缺少 user_id' });
+  const relations = listRelations(userId, {
+    memoryId: req.query.memory_id ? String(req.query.memory_id) : undefined,
+    type: req.query.type ? String(req.query.type) : undefined,
+    status: req.query.status ? String(req.query.status) : undefined,
+  });
+  return res.json({ relations });
+});
+
+router.get('/graph', (req, res) => {
+  const userId = String(req.query.user_id ?? '').trim();
+  if (!userId) return res.status(400).json({ error: '缺少 user_id' });
+  return res.json(buildGraph(userId));
+});
+
+// ===== Phase 4：洞察 =====
+router.get('/insights', (req, res) => {
+  const userId = String(req.query.user_id ?? '').trim();
+  if (!userId) return res.status(400).json({ error: '缺少 user_id' });
+  return res.json({ insights: listInsights(userId, req.query.status ? String(req.query.status) : undefined) });
+});
+
+router.post('/insights/generate', (req, res) => {
+  const body = (req.body ?? {}) as Record<string, unknown>;
+  const userId = String(body.user_id ?? '').trim();
+  if (!userId) return res.status(400).json({ error: '缺少 user_id' });
+  const created = generateConnections(userId);
+  return res.json({ created });
+});
+
+router.patch('/insights/:id', (req, res) => {
+  const body = (req.body ?? {}) as Record<string, unknown>;
+  const status = String(body.status ?? '');
+  if (!['accepted', 'dismissed'].includes(status)) {
+    return res.status(400).json({ error: 'status 必须是 accepted/dismissed' });
+  }
+  updateInsightStatus(req.params.id, status as 'accepted' | 'dismissed');
+  return res.json({ ok: true, status });
+});
+
+// ===== Phase 4：召回反馈 + 事件 =====
+router.get('/recall/events', (req, res) => {
+  const userId = String(req.query.user_id ?? '').trim();
+  if (!userId) return res.status(400).json({ error: '缺少 user_id' });
+  return res.json({
+    events: listRecallEvents(userId, req.query.memory_id ? String(req.query.memory_id) : undefined),
+  });
+});
+
+router.post('/recall/:memoryId/review', (req, res) => {
+  const body = (req.body ?? {}) as Record<string, unknown>;
+  const userId = String(body.user_id ?? '').trim();
+  const feedback = String(body.feedback ?? '');
+  if (!userId) return res.status(400).json({ error: '缺少 user_id' });
+  if (!['again', 'good', 'easy'].includes(feedback)) {
+    return res.status(400).json({ error: 'feedback 必须是 again/good/easy' });
+  }
+  const result = reviewMemory(userId, req.params.memoryId, feedback as 'again' | 'good' | 'easy');
+  if (!result) return res.status(404).json({ error: '未找到' });
+  return res.json(result);
+});
+
+// ===== Phase 4：创作上下文 =====
+router.get('/compose/context', (req, res) => {
+  const userId = String(req.query.user_id ?? '').trim();
+  if (!userId) return res.status(400).json({ error: '缺少 user_id' });
+  const ctx = buildContext({
+    userId,
+    type: (req.query.type as ComposeType) || 'article',
+    memoryIds: req.query.memory_ids ? String(req.query.memory_ids).split(',').filter(Boolean) : undefined,
+    topic: req.query.topic ? String(req.query.topic) : undefined,
+  });
+  return res.json({
+    memory_ids: ctx.memoryIds,
+    selected_atoms: ctx.selectedAtoms,
+    token_estimate: ctx.tokenEstimate,
+    truncated: ctx.truncated,
   });
 });
