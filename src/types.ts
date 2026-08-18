@@ -103,6 +103,9 @@ export interface Item {
   half_life: number | null;
   digest_state: string;
   last_recalled_at: string | null;
+  memory_strength: number | null;
+  review_count: number;
+  next_review_at: string | null;
   status: ItemStatus;
   error_msg: string | null;
   created_at: string;
@@ -116,4 +119,74 @@ export interface SimilarItem {
   category: string | null;
   similarity: number;
   level: 'exact' | 'high' | 'related';
+}
+
+// ===== Phase 4 智能层类型 =====
+
+export type RelationType = 'similar' | 'topic' | 'support' | 'contradict' | 'derived';
+export type RelationSource = 'embedding' | 'keyword' | 'tag' | 'llm';
+export type RelationStatus = 'active' | 'dismissed';
+
+/** 关系（记忆之间的边）。DB 存 left/right（min/max 规范化），API 层暴露 source_id/target_id */
+export interface Relation {
+  id: string;
+  user_id: string;
+  source_id: string;
+  target_id: string;
+  type: RelationType;
+  score: number;
+  confidence: number;
+  source: RelationSource;
+  evidence: Record<string, unknown>;
+  status: RelationStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export type InsightType = 'pattern' | 'connection' | 'trend' | 'opportunity';
+export type InsightStatus = 'active' | 'accepted' | 'dismissed' | 'expired';
+export type InsightImpact = 'low' | 'medium' | 'high';
+
+/** AI 洞察（可持久化、可反馈、带生命周期） */
+export interface Insight {
+  id: string;
+  user_id: string;
+  type: InsightType;
+  title: string;
+  body: string;
+  related_ids: string[];
+  confidence: number;
+  impact_score: InsightImpact;
+  status: InsightStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export type RecallTrigger = 'decay' | 'schedule' | 'manual' | 'similar';
+export type RecallFeedback = 'again' | 'good' | 'easy';
+
+/** 召回事件（一次召回 + 复习反馈） */
+export interface RecallEvent {
+  id: string;
+  user_id: string;
+  memory_id: string;
+  triggered_by: RecallTrigger;
+  trigger_reason: string;
+  recall_score: number;
+  feedback: RecallFeedback | null;
+  created_at: string;
+  reviewed_at: string | null;
+}
+
+/** 创作上下文预览（/api/compose/context 返回） */
+export interface ComposeContextResult {
+  memory_ids: string[];
+  selected_atoms: {
+    memory_id: string;
+    title: string;
+    context_score: number;
+    atoms: AtomInput[];
+  }[];
+  token_estimate: number;
+  truncated: boolean;
 }

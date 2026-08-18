@@ -3,7 +3,7 @@ import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { recallScore } from './halflife.js';
-import type { Atom, Item, ItemStatus, Platform, Scene, SimilarItem, UserPrefs } from './types.js';
+import type { Atom, Insight, Item, ItemStatus, Platform, RecallEvent, Relation, Scene, SimilarItem, UserPrefs } from './types.js';
 
 let db: DatabaseSync;
 
@@ -229,6 +229,9 @@ interface Row {
   half_life: number | null;
   digest_state: string;
   last_recalled_at: string | null;
+  memory_strength: number | null;
+  review_count: number;
+  next_review_at: string | null;
   cover_url: string | null;
   status: string;
   error_msg: string | null;
@@ -275,6 +278,9 @@ function toItem(r: Row): Item {
     half_life: r.half_life,
     digest_state: r.digest_state ?? 'unread',
     last_recalled_at: r.last_recalled_at,
+    memory_strength: r.memory_strength,
+    review_count: r.review_count,
+    next_review_at: r.next_review_at,
     cover_url: r.cover_url,
     status: r.status as ItemStatus,
     error_msg: r.error_msg,
@@ -601,4 +607,260 @@ export function autoArchiveExpiredScenes(): number {
     db.prepare('UPDATE items SET scene_id = NULL, updated_at = ? WHERE scene_id = ?').run(now, r.id);
   }
   return rows.length;
+}
+
+// ===== Phase 4 智能层：relations =====
+
+interface RelationRow {
+  id: string;
+  user_id: string;
+  left_memory_id: string;
+  right_memory_id: string;
+  type: string;
+  score: number;
+  confidence: number;
+  source: string;
+  evidence: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+function toRelation(r: RelationRow): Relation {
+  let evidence: unknown = {};
+  try {
+    evidence = JSON.parse(r.evidence);
+  } catch {
+    evidence = {};
+  }
+  return {
+    id: r.id,
+    user_id: r.user_id,
+    source_id: r.left_memory_id,
+    target_id: r.right_memory_id,
+    type: r.type as Relation['type'],
+    score: r.score,
+    confidence: r.confidence,
+    source: r.source as Relation['source'],
+    evidence: evidence && typeof evidence === 'object' ? (evidence as Record<string, unknown>) : {},
+    status: r.status as Relation['status'],
+    created_at: r.created_at,
+    updated_at: r.updated_at,
+  };
+}
+
+export function listRelations(
+  userId: string,
+  opts: { memoryId?: string; type?: string; status?: string } = {},
+): Relation[] {
+  const where: string[] = ['user_id = ?'];
+  const params: any[] = [userId];
+  if (opts.memoryId) {
+    where.push('(left_memory_id = ? OR right_memory_id = ?)');
+    params.push(opts.memoryId, opts.memoryId);
+  }
+  if (opts.type) {
+    where.push('type = ?');
+    params.push(opts.type);
+  }
+  if (opts.status) {
+    where.push('status = ?');
+    params.push(opts.status);
+  }
+  const rows = db
+    .prepare(`SELECT * FROM relations WHERE ${where.join(' AND ')} ORDER BY created_at DESC`)
+    .all(...params) as unknown as RelationRow[];
+  return rows.map(toRelation);
+}
+
+/** 写入无向关系：left/right 自动 min/max 规范化，UNIQUE 幂等去重 */
+export function insertRelation(input: {
+  userId: string;
+  leftId: string;
+  rightId: string;
+  type: Relation['type'];
+  score: number;
+  confidence: number;
+  source: Relation['source'];
+  evidence: Record<string, unknown>;
+}): void {
+  const now = new Date().toISOString();
+  const left = input.leftId < input.rightId ? input.leftId : input.rightId;
+  const right = input.leftId < input.rightId ? input.rightId : input.leftId;
+  db.prepare(`
+    INSERT OR IGNORE INTO relations
+      (id, user_id, left_memory_id, right_memory_id, type, score, confidence, source, evidence, status, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)
+  `).run(
+    randomUUID(),
+    input.userId,
+    left,
+    right,
+    input.type,
+    input.score,
+    input.confidence,
+    input.source,
+    JSON.stringify(input.evidence),
+    now,
+    now,
+  );
+}
+
+export function dismissRelation(id: string): void {
+  db.prepare("UPDATE relations SET status = 'dismissed', updated_at = ? WHERE id = ?")
+    .run(new Date().toISOString(), id);
+}
+
+// ===== Phase 4 智能层：insights =====
+
+interface InsightRow {
+  id: string;
+  user_id: string;
+  type: string;
+  title: string;
+  body: string;
+  related_ids: string;
+  confidence: number;
+  impact_score: string;
+  status: string;
+  created_at: string;
+  updated_at: string;
+}
+
+function toInsight(r: InsightRow): Insight {
+  let related: unknown = [];
+  try {
+    related = JSON.parse(r.related_ids);
+  } catch {
+    related = [];
+  }
+  return {
+    id: r.id,
+    user_id: r.user_id,
+    type: r.type as Insight['type'],
+    title: r.title,
+    body: r.body,
+    related_ids: Array.isArray(related) ? related.map(String) : [],
+    confidence: r.confidence,
+    impact_score: r.impact_score as Insight['impact_score'],
+    status: r.status as Insight['status'],
+    created_at: r.created_at,
+    updated_at: r.updated_at,
+  };
+}
+
+export function listInsights(userId: string, status?: string): Insight[] {
+  const params: any[] = [userId];
+  let sql = 'SELECT * FROM insights WHERE user_id = ?';
+  if (status) {
+    sql += ' AND status = ?';
+    params.push(status);
+  }
+  sql += ' ORDER BY created_at DESC';
+  const rows = db.prepare(sql).all(...params) as unknown as InsightRow[];
+  return rows.map(toInsight);
+}
+
+export function insertInsight(input: {
+  userId: string;
+  type: Insight['type'];
+  title: string;
+  body: string;
+  relatedIds: string[];
+  confidence: number;
+  impactScore?: Insight['impact_score'];
+}): void {
+  const now = new Date().toISOString();
+  db.prepare(`
+    INSERT INTO insights (id, user_id, type, title, body, related_ids, confidence, impact_score, status, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)
+  `).run(
+    randomUUID(),
+    input.userId,
+    input.type,
+    input.title,
+    input.body,
+    JSON.stringify(input.relatedIds),
+    input.confidence,
+    input.impactScore ?? 'medium',
+    now,
+    now,
+  );
+}
+
+export function updateInsightStatus(id: string, status: Insight['status']): void {
+  db.prepare('UPDATE insights SET status = ?, updated_at = ? WHERE id = ?')
+    .run(status, new Date().toISOString(), id);
+}
+
+// ===== Phase 4 智能层：recall_events =====
+
+interface RecallEventRow {
+  id: string;
+  user_id: string;
+  memory_id: string;
+  triggered_by: string;
+  trigger_reason: string;
+  recall_score: number;
+  feedback: string | null;
+  created_at: string;
+  reviewed_at: string | null;
+}
+
+function toRecallEvent(r: RecallEventRow): RecallEvent {
+  return {
+    id: r.id,
+    user_id: r.user_id,
+    memory_id: r.memory_id,
+    triggered_by: r.triggered_by as RecallEvent['triggered_by'],
+    trigger_reason: r.trigger_reason,
+    recall_score: r.recall_score,
+    feedback: r.feedback as RecallEvent['feedback'] | null,
+    created_at: r.created_at,
+    reviewed_at: r.reviewed_at,
+  };
+}
+
+export function listRecallEvents(userId: string, memoryId?: string): RecallEvent[] {
+  const params: any[] = [userId];
+  let sql = 'SELECT * FROM recall_events WHERE user_id = ?';
+  if (memoryId) {
+    sql += ' AND memory_id = ?';
+    params.push(memoryId);
+  }
+  sql += ' ORDER BY created_at DESC';
+  const rows = db.prepare(sql).all(...params) as unknown as RecallEventRow[];
+  return rows.map(toRecallEvent);
+}
+
+export function insertRecallEvent(input: {
+  userId: string;
+  memoryId: string;
+  triggeredBy: RecallEvent['triggered_by'];
+  triggerReason: string;
+  recallScore: number;
+  feedback?: RecallEvent['feedback'];
+}): void {
+  const now = new Date().toISOString();
+  db.prepare(`
+    INSERT INTO recall_events (id, user_id, memory_id, triggered_by, trigger_reason, recall_score, feedback, created_at, reviewed_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    randomUUID(),
+    input.userId,
+    input.memoryId,
+    input.triggeredBy,
+    input.triggerReason,
+    input.recallScore,
+    input.feedback ?? null,
+    now,
+    input.feedback ? now : null,
+  );
+}
+
+// ===== Phase 4 智能层：memory 字段 =====
+
+export function setMemoryStrength(id: string, strength: number): void {
+  db.prepare('UPDATE items SET memory_strength = ?, updated_at = ? WHERE id = ?')
+    .run(strength, new Date().toISOString(), id);
 }
