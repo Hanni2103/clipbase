@@ -2,6 +2,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { recallScore } from './halflife.js';
 import type { Atom, Item, ItemStatus, Platform, Scene, SimilarItem, UserPrefs } from './types.js';
 
 let db: DatabaseSync;
@@ -76,6 +77,54 @@ export function initDb(path: string): DatabaseSync {
       created_at TEXT NOT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_dedup_user ON dedup_actions(user_id, created_at DESC);
+
+    CREATE TABLE IF NOT EXISTS relations (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      left_memory_id TEXT NOT NULL,
+      right_memory_id TEXT NOT NULL,
+      type TEXT NOT NULL CHECK (type IN ('similar','topic','support','contradict','derived')),
+      score REAL NOT NULL,
+      confidence REAL NOT NULL,
+      source TEXT NOT NULL CHECK (source IN ('embedding','keyword','tag','llm')),
+      evidence TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'active',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_relations_user ON relations(user_id, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_relations_left ON relations(left_memory_id);
+    CREATE INDEX IF NOT EXISTS idx_relations_right ON relations(right_memory_id);
+    CREATE UNIQUE INDEX IF NOT EXISTS uniq_relation_pair ON relations(user_id, left_memory_id, right_memory_id, type);
+
+    CREATE TABLE IF NOT EXISTS insights (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      type TEXT NOT NULL CHECK (type IN ('pattern','connection','trend','opportunity')),
+      title TEXT NOT NULL,
+      body TEXT NOT NULL,
+      related_ids TEXT NOT NULL,
+      confidence REAL NOT NULL,
+      impact_score TEXT NOT NULL DEFAULT 'medium',
+      status TEXT NOT NULL DEFAULT 'active',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_insights_user ON insights(user_id, created_at DESC);
+
+    CREATE TABLE IF NOT EXISTS recall_events (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      memory_id TEXT NOT NULL,
+      triggered_by TEXT NOT NULL,
+      trigger_reason TEXT NOT NULL,
+      recall_score REAL NOT NULL,
+      feedback TEXT,
+      created_at TEXT NOT NULL,
+      reviewed_at TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_recall_user ON recall_events(user_id, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_recall_memory ON recall_events(memory_id);
   `);
 
   // 简单迁移：为旧库补列
@@ -100,6 +149,61 @@ export function initDb(path: string): DatabaseSync {
   }
   if (!itemCols.some((c) => c.name === 'last_recalled_at')) {
     db.exec('ALTER TABLE items ADD COLUMN last_recalled_at TEXT');
+  }
+  if (!itemCols.some((c) => c.name === 'memory_strength')) {
+    db.exec('ALTER TABLE items ADD COLUMN memory_strength REAL');
+  }
+  if (!itemCols.some((c) => c.name === 'review_count')) {
+    db.exec('ALTER TABLE items ADD COLUMN review_count INTEGER NOT NULL DEFAULT 0');
+  }
+  if (!itemCols.some((c) => c.name === 'next_review_at')) {
+    db.exec('ALTER TABLE items ADD COLUMN next_review_at TEXT');
+  }
+
+  // ===== Phase 6.0 回填（幂等）=====
+  const backfillNow = new Date().toISOString();
+
+  // memory_strength：未初始化的条目用当前 recall_score 初始化
+  const strengthRows = db
+    .prepare('SELECT id, created_at, half_life FROM items WHERE memory_strength IS NULL AND half_life IS NOT NULL')
+    .all() as { id: string; created_at: string; half_life: number }[];
+  const updStrength = db.prepare('UPDATE items SET memory_strength = ? WHERE id = ?');
+  for (const r of strengthRows) {
+    updStrength.run(recallScore(r.created_at, r.half_life), r.id);
+  }
+
+  // relations：把 items.similar_items JSON 转成无向 relations（left/right 规范化，INSERT OR IGNORE 幂等）
+  const relRows = db
+    .prepare("SELECT id, user_id, similar_items FROM items WHERE similar_items != '[]'")
+    .all() as { id: string; user_id: string; similar_items: string }[];
+  const insRel = db.prepare(`
+    INSERT OR IGNORE INTO relations
+      (id, user_id, left_memory_id, right_memory_id, type, score, confidence, source, evidence, status, created_at, updated_at)
+    VALUES (?, ?, ?, ?, 'similar', ?, ?, 'keyword', ?, 'active', ?, ?)
+  `);
+  for (const r of relRows) {
+    let sims: SimilarItem[] = [];
+    try {
+      sims = JSON.parse(r.similar_items);
+    } catch {
+      continue;
+    }
+    for (const s of sims) {
+      if (!s.id || s.id === r.id) continue;
+      const left = r.id < s.id ? r.id : s.id;
+      const right = r.id < s.id ? s.id : r.id;
+      insRel.run(
+        randomUUID(),
+        r.user_id,
+        left,
+        right,
+        s.similarity,
+        s.similarity,
+        JSON.stringify({ level: s.level }),
+        backfillNow,
+        backfillNow,
+      );
+    }
   }
 
   return db;
