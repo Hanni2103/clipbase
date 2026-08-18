@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { fetchBrainState } from '../api/brain'
+import { fetchBrainState } from '../api/dashboard'
 import type { BrainState } from '../types/brain'
 import AuroraBackground from '../components/background/AuroraBackground'
 import BrainCore from '../components/brain/BrainCore'
 import MemoryStatus from '../components/brain/MemoryStatus'
 import InsightCard from '../components/brain/InsightCard'
 import CapturePortal from '../components/CapturePortal'
-import BottomNav from '../components/layout/BottomNav'
 
 const STATS = [
   { key: 'total', label: '知识容量', color: 'text-white' },
@@ -63,12 +62,14 @@ export default function Home() {
               <h1 className="bg-gradient-to-r from-white to-primary bg-clip-text text-3xl font-bold text-transparent">
                 你的 AI 大脑正在成长
               </h1>
-              <p className="mt-3 text-white/50">Clipbase Memory OS</p>
+              <p className="mt-3 text-white/50">Clipbase · AI 记忆系统</p>
             </div>
 
-            <div className="mt-12">
+            <div className="mt-10">
               <BrainCore health={brain.health} />
             </div>
+
+            <CapturePortal />
 
             <div className="mt-10 grid grid-cols-3 gap-4">
               {STATS.map((s) => (
@@ -85,13 +86,9 @@ export default function Home() {
             <MemoryStatus active={brain.active} fading={brain.fading} sleeping={brain.sleeping} />
 
             <InsightCard insight={brain.insight} />
-
-            <CapturePortal />
           </>
         )}
       </main>
-
-      <BottomNav />
     </div>
   )
 }

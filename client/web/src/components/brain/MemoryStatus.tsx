@@ -1,7 +1,7 @@
 const ITEMS = [
-  { key: 'active', label: 'Active Memory', desc: 'AI 认为：当前最有价值', color: 'text-success', dot: '🟢' },
-  { key: 'fading', label: 'Fading Memory', desc: '建议：重新阅读', color: 'text-warning', dot: '🟡' },
-  { key: 'sleeping', label: 'Sleeping Memory', desc: '等待重新激活', color: 'text-gray-400', dot: '⚫' },
+  { key: 'active', label: '活跃记忆', desc: 'AI 认为：当前最有价值', color: 'text-success', dot: '🟢' },
+  { key: 'fading', label: '即将遗忘', desc: '建议：重新阅读', color: 'text-warning', dot: '🟡' },
+  { key: 'sleeping', label: '沉睡知识', desc: '等待重新激活', color: 'text-gray-400', dot: '⚫' },
 ] as const
 
 export default function MemoryStatus({
@@ -16,7 +16,7 @@ export default function MemoryStatus({
   const counts = { active, fading, sleeping }
   return (
     <div className="mt-8">
-      <h2 className="mb-3 text-lg font-semibold">Memory Status</h2>
+      <h2 className="mb-3 text-lg font-semibold">记忆状态</h2>
       <div className="space-y-3">
         {ITEMS.map((it) => (
           <div

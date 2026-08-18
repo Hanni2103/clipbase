@@ -9,7 +9,7 @@ export default function InsightCard({
     <div className="mt-8 rounded-3xl border border-white/10 bg-gradient-to-br from-primary/20 via-indigo-500/10 to-secondary/20 p-6 backdrop-blur-xl">
       <div className="flex items-center gap-2 text-primary">
         <Sparkles size={18} />
-        <span className="text-sm font-medium">AI Insight</span>
+        <span className="text-sm font-medium">AI 洞察</span>
       </div>
       {insight.found ? (
         <>

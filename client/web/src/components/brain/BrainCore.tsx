@@ -25,7 +25,7 @@ export default function BrainCore({ health }: { health: number }) {
         <div className="relative text-center">
           <div className="text-5xl">🧠</div>
           <div className="mt-2 text-2xl font-bold">{health}%</div>
-          <div className="text-xs text-white/60">Memory Health</div>
+          <div className="text-xs text-white/60">记忆健康度</div>
         </div>
       </motion.div>
     </div>
