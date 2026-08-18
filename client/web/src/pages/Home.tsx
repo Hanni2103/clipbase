@@ -64,10 +64,10 @@ export default function Home() {
         {brain && (
           <>
             <div className="text-center">
-              <h1 className="bg-gradient-to-r from-white to-primary bg-clip-text text-3xl font-bold text-transparent">
+              <h1 className="gradient-text text-3xl font-bold">
                 你的 AI 大脑正在成长
               </h1>
-              <p className="mt-3 text-white/50">Clipbase · AI 记忆系统</p>
+              <p className="mt-3 text-sm text-white/50">Clipbase · AI 记忆系统</p>
             </div>
 
             <div className="mt-10">
@@ -80,7 +80,7 @@ export default function Home() {
               {STATS.map((s) => (
                 <div
                   key={s.key}
-                  className="rounded-2xl border border-white/10 bg-white/5 p-4 text-center backdrop-blur-xl"
+                  className="glass rounded-2xl p-4 text-center shadow-glow-card"
                 >
                   <div className={`text-xl font-bold ${s.color}`}>{brain[s.key]}</div>
                   <div className="mt-1 text-xs text-white/50">{s.label}</div>

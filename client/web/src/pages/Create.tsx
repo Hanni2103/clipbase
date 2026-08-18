@@ -31,18 +31,19 @@ export default function Create() {
     <div className="relative min-h-screen">
       <AuroraBackground />
       <main className="relative mx-auto max-w-md px-6 pb-28 pt-10">
-        <PageHeader title="创造" subtitle="先选记忆，再让 AI 基于它们创作优质内容" />
+        <PageHeader title="创作工作室" subtitle="先选记忆，再让 AI 基于它们创作优质内容" />
 
-        <div className="mt-4 space-y-2">
-          {loadingTypes && <SkeletonList count={4} className="h-12" />}
+        <div className="mt-4 grid grid-cols-2 gap-3">
+          {loadingTypes && <SkeletonList count={4} className="h-24" />}
           {!loadingTypes &&
             types.map((t) => (
               <Link
                 key={t.key}
                 to={`/create/${t.key}`}
-                className="block w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3.5 text-left text-white backdrop-blur-xl transition hover:bg-white/10"
+                className="glass rounded-2xl p-5 shadow-glow-card transition hover:-translate-y-0.5 hover:shadow-glow-primary"
               >
-                {t.emoji} {t.label}
+                <div className="text-3xl">{t.emoji}</div>
+                <div className="mt-3 text-sm font-medium text-white">{t.label}</div>
               </Link>
             ))}
         </div>

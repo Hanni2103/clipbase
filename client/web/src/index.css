@@ -4,16 +4,10 @@
 
 :root {
   --bg: #050816;
-  --card: rgba(255, 255, 255, 0.05);
-  --border: rgba(255, 255, 255, 0.1);
   --purple: #8b5cf6;
   --cyan: #06b6d4;
-  --green: #10b981;
-  --orange: #f59e0b;
-  --surface-primary: rgba(139, 92, 246, 0.1);
-  --surface-secondary: rgba(6, 182, 212, 0.1);
-  --surface-ai: rgba(139, 92, 246, 0.16);
-  --surface-memory: rgba(6, 182, 212, 0.14);
+  --green: #34d399;
+  --orange: #fbbf24;
 }
 
 html,
@@ -25,10 +19,59 @@ body,
 body {
   margin: 0;
   background:
-    radial-gradient(circle at 50% -10%, rgba(139, 92, 246, 0.25), transparent 45%),
+    radial-gradient(1200px 640px at 50% -12%, rgba(139, 92, 246, 0.24), transparent 62%),
+    radial-gradient(900px 520px at 108% 104%, rgba(6, 182, 212, 0.15), transparent 60%),
+    radial-gradient(720px 420px at -8% 82%, rgba(99, 102, 241, 0.12), transparent 60%),
     #050816;
   color: #fff;
-  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei',
-    'Segoe UI', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', 'Segoe UI',
+    sans-serif;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* 玻璃卡片（V2） */
+.glass {
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+}
+
+/* 渐变标题 */
+.gradient-text {
+  background: linear-gradient(115deg, #ffffff 0%, #c4b5fd 45%, #67e8f9 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* 细滚动条 */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
+::selection {
+  background: rgba(139, 92, 246, 0.35);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }

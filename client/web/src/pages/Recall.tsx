@@ -13,9 +13,9 @@ import ErrorState from '../components/ui/ErrorState'
 import GlassCard from '../components/ui/GlassCard'
 
 const FEEDBACK = [
-  { key: 'again', label: '忘了', icon: RotateCcw },
-  { key: 'good', label: '记住了', icon: Check },
-  { key: 'easy', label: '太简单', icon: Zap },
+  { key: 'again', label: '忘了', icon: RotateCcw, cls: 'bg-warning/15 text-warning hover:bg-warning/25' },
+  { key: 'good', label: '记住了', icon: Check, cls: 'bg-success/15 text-success hover:bg-success/25' },
+  { key: 'easy', label: '太简单', icon: Zap, cls: 'bg-secondary/15 text-secondary hover:bg-secondary/25' },
 ] as const
 
 export default function Recall() {
@@ -93,9 +93,17 @@ export default function Recall() {
                       <span className="text-warning">{it.recallScore}</span>
                     </div>
                     {it.memoryStrength !== null && it.memoryStrength !== undefined && (
-                      <div className="flex items-center justify-between">
-                        <span>记忆强度</span>
-                        <span className="text-white">{Math.round(it.memoryStrength * 100)}%</span>
+                      <div>
+                        <div className="flex items-center justify-between">
+                          <span>记忆强度</span>
+                          <span className="text-white">{Math.round(it.memoryStrength * 100)}%</span>
+                        </div>
+                        <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-white/10">
+                          <div
+                            className="h-full rounded-full bg-primary"
+                            style={{ width: `${Math.min(100, it.memoryStrength * 100)}%` }}
+                          />
+                        </div>
                       </div>
                     )}
                     {it.halfLife && (
@@ -120,7 +128,7 @@ export default function Recall() {
                           key={f.key}
                           onClick={() => feedback(it, f.key)}
                           disabled={!!busy[it.id]}
-                          className="flex flex-1 items-center justify-center gap-1 rounded-lg bg-white/10 px-2 py-2 text-xs text-white/80 transition hover:bg-white/20 disabled:opacity-50"
+                          className={`flex flex-1 items-center justify-center gap-1 rounded-lg px-2 py-2 text-xs transition disabled:opacity-50 ${f.cls}`}
                         >
                           <Icon size={14} /> {f.label}
                         </button>

@@ -87,11 +87,17 @@ export default function Universe() {
         )}
         {!loading && !error && graph && realEdges.length > 0 && (
           <>
-            <motion.svg
-              viewBox="0 0 520 440"
-              className="mt-2 w-full"
-              animate={reduceMotion ? {} : { rotate: [0, 0] }}
-            >
+            <motion.svg viewBox="0 0 520 440" className="mt-2 w-full">
+              {/* 装饰轨道环（慢速旋转，尊重 reduced-motion） */}
+              <motion.g
+                animate={reduceMotion ? {} : { rotate: 360 }}
+                transition={{ duration: 90, repeat: Infinity, ease: 'linear' }}
+                style={{ originX: '260px', originY: '220px' }}
+              >
+                <circle cx="260" cy="220" r="196" fill="none" stroke="rgba(139,92,246,0.12)" strokeWidth="1" strokeDasharray="2 7" />
+                <circle cx="260" cy="220" r="206" fill="none" stroke="rgba(6,182,212,0.08)" strokeWidth="1" strokeDasharray="1 9" />
+              </motion.g>
+
               {/* 关系线 */}
               {realEdges.map((e) => {
                 const a = posById.get(e.source)

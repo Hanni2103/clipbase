@@ -33,7 +33,7 @@ export default function Memory() {
     <div className="relative min-h-screen">
       <AuroraBackground />
       <main className="relative mx-auto max-w-md px-6 pb-28 pt-10">
-        <PageHeader title="我的记忆" subtitle="你沉淀的所有知识，AI 已帮你理解、整理、连接" />
+        <PageHeader title="记忆花园" subtitle="每一段记忆都是一株会生长的植物" />
 
         <Link
           to="/universe"

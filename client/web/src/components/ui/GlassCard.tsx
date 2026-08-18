@@ -24,7 +24,7 @@ export default function GlassCard({
   return (
     <div
       onClick={onClick}
-      className={`rounded-2xl border border-white/10 backdrop-blur-xl ${VARIANTS[variant]} ${className}`}
+      className={`rounded-2xl border border-white/10 backdrop-blur-xl shadow-glow-card ${VARIANTS[variant]} ${className}`}
     >
       {children}
     </div>

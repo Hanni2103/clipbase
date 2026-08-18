@@ -35,7 +35,7 @@ export default function ItemCard({ item }: { item: Item }) {
   const st = STAGE[lc.stage]
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-surface-memory p-4 backdrop-blur-xl">
+    <div className="glass rounded-2xl p-4 shadow-glow-card">
       {/* 生命周期（真实 memory_strength 驱动） */}
       <div className="mb-3">
         <div className="flex items-center justify-between text-xs">
