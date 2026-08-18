@@ -27,11 +27,11 @@ Clipbase = **AI 知识生命系统（AI Memory OS）**。用户从任意平台�
 | 存储 | SQLite（`node:sqlite`，原生）| 单用户 MVP；规模化再迁 pgvector |
 | AI | OpenAI 兼容接口（DeepSeek/豆包/Kimi/通义）| 用 `fetch` 直接调，不引入 SDK |
 | 网页提取 | cheerio | |
-| Web | 单页 HTML（无构建、无框架）| 直接编辑 `public/index.html` |
+| Web | React 18 + Vite + Tailwind + Framer Motion + Lucide | 源码在 `client/web/`，dev 跑 Vite(5173) 代理 /api 到后端(3000) |
 | Android | Kotlin + XML + Material + OkHttp | 编译：Gradle 8.10.2 + AGP 8.5 + JDK 17 |
 | iOS | SwiftUI + URLSession | iOS 16+ |
 
-**红线**：不要引入新的重型依赖（如 Prisma、Next.js、React Native），除非产品文档明确要求。
+**红线**：**后端**不要引入新的重型依赖（如 Prisma、Next.js、ORM），除非产品文档明确要求。**前端（Web）例外**：React + Vite + Tailwind + Framer Motion 是既定的 Web 技术栈，用于实现 AI 大脑的高质量动效。
 
 ---
 
@@ -50,7 +50,7 @@ src/
   similar.ts      相似度引擎（哈希 + n-gram + 标签重合）
   halflife.ts     半衰期 + 召回分
   composer.ts     一键成文（7 种创作类型）
-public/index.html Web 看板（AI Brain V2 首页）
+client/web/       Web 前端（React + Vite + Tailwind，AI Brain 首页）
 client/ios/       iOS（SwiftUI + Share Extension）
 client/android/   Android（5 Tab 深色 + 分享接收）
 docs/             文档
@@ -105,7 +105,11 @@ npm run typecheck      # tsc --noEmit
 cd client/android
 gradle assembleDebug   # 或完整路径 C:\Gradle\gradle-8.10.2\bin\gradle.bat
 
-# Web 看板：改 public/index.html 后刷新浏览器即可（静态托管，无需重启）
+# Web 前端（React + Vite，源码在 client/web）
+cd client/web
+npm install
+npm run dev            # dev 服务器 5173，/api 代理到后端 3000
+npm run build          # 构建到 dist/
 ```
 
 ---

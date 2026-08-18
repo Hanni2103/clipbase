@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #050816;
+  --card: rgba(255, 255, 255, 0.05);
+  --border: rgba(255, 255, 255, 0.1);
+  --purple: #8b5cf6;
+  --cyan: #06b6d4;
+  --green: #10b981;
+  --orange: #f59e0b;
+}
+
+html,
+body,
+#root {
+  min-height: 100vh;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 50% -10%, rgba(139, 92, 246, 0.25), transparent 45%),
+    #050816;
+  color: #fff;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei',
+    'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
