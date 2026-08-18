@@ -10,6 +10,10 @@
   --cyan: #06b6d4;
   --green: #10b981;
   --orange: #f59e0b;
+  --surface-primary: rgba(139, 92, 246, 0.1);
+  --surface-secondary: rgba(6, 182, 212, 0.1);
+  --surface-ai: rgba(139, 92, 246, 0.16);
+  --surface-memory: rgba(6, 182, 212, 0.14);
 }
 
 html,

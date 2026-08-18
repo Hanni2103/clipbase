@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { fetchRecall } from '../api/recall'
 import type { RecallItem } from '../types/brain'
 import { INTENT_LABELS } from '../lib/labels'
+import { useAIState } from '../hooks/useAIState'
 import AuroraBackground from '../components/background/AuroraBackground'
 import PageHeader from '../components/ui/PageHeader'
 import { SkeletonList } from '../components/ui/Skeleton'
@@ -15,14 +16,19 @@ export default function Recall() {
   const [items, setItems] = useState<RecallItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
+  const { setState } = useAIState()
 
   function load() {
     setLoading(true)
     setError(false)
+    setState('recalling')
     fetchRecall()
       .then(setItems)
       .catch(() => setError(true))
-      .finally(() => setLoading(false))
+      .finally(() => {
+        setLoading(false)
+        setState('idle')
+      })
   }
   useEffect(load, [])
 

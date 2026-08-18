@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
 import { fetchBrainState } from '../api/dashboard'
 import type { BrainState } from '../types/brain'
+import { useAIState } from '../hooks/useAIState'
 import AuroraBackground from '../components/background/AuroraBackground'
 import BrainCore from '../components/brain/BrainCore'
 import MemoryStatus from '../components/brain/MemoryStatus'
@@ -17,11 +18,15 @@ const STATS = [
 export default function Home() {
   const [brain, setBrain] = useState<BrainState | null>(null)
   const [error, setError] = useState(false)
+  const { setState } = useAIState()
 
   useEffect(() => {
+    setState('thinking')
     fetchBrainState()
       .then(setBrain)
       .catch(() => setError(true))
+      .finally(() => setState('idle'))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return (
