@@ -48,6 +48,13 @@ export default function Me() {
               <span className="text-white/40">→</span>
             </GlassCard>
           </Link>
+
+          <Link to="/expired" className="block transition hover:opacity-80">
+            <GlassCard className="flex items-center justify-between p-4 text-sm text-white/80">
+              <span>沉睡知识</span>
+              <span className="text-white/40">→</span>
+            </GlassCard>
+          </Link>
         </div>
 
         <div className="mt-6 text-center text-sm text-white/40">
